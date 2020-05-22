@@ -18,9 +18,28 @@ public class Process extends UntypedAbstractActor {
     private final int id;//id of current process
     private Members processes;//other processes' references
 
+    // -- OFCons variables --
+    class StateEntry
+    {
+	public int estimate, imposeballote;
+	public ImposeEntry(int estimate_, int imposeballot_)
+	{
+	    estimate = estimate_;
+	    imposeballote = imposeballot_;
+	}
+    }
+    private int ballot, proposal, estimate, readballot, imposeballot;
+    private ArrayList<StateEntry> States;
+    
+
     public Process(int ID, int nb) {
         N = nb;
         id = ID;
+	estimate = -1;
+	ballot = id - N;
+	proposal = -1;
+	readballot = 0;
+	imposeballot = 0;
     }
     
     public String toString() {
