@@ -74,9 +74,11 @@ public class Process extends UntypedAbstractActor {
 	}
 	reading = true;
 	gathercount = 0;
+
+	log.info("p" + self().path().name() + " proposed " + proposal);
+	log.info("p" + self().path().name() + " started the Reading phase");
 	for(ActorRef actor: processes.references)
 	{
-	    //    log.info("p" + self().path().name() + " sent ReadMsg to " + "p" + actor.path().name());
 	    actor.tell(new ReadRequest(ballot), self());
 	}        
     }
@@ -89,20 +91,12 @@ public class Process extends UntypedAbstractActor {
 	    processes = m;
 	    log.info("p" + self().path().name() + " received processes info");
 	}
-	if (message instanceof OfconsProposerMsg) {
-	    OfconsProposerMsg opm = (OfconsProposerMsg) message;
-	    log.info("p" + self().path().name() + " received OfconsProposerMsg: " + opm.message);
-	    ReadMsg rm = new ReadMsg("test read");
-	    for(ActorRef actor: processes.references) {
-		log.info("p" + self().path().name() + " sent ReadMsg to " + "p" + actor.path().name());
-		actor.tell(rm, self());
-	    }
-          }
-
+      
 	/* --- Synoid OFCons --- */
 
-	else if (message instanceof Launch)
+	else if (message instanceof LaunchRequest)
 	{
+	    log.info("p" + self().path().name() + " received the launch request");
 	    LaunchRequest launch = (LaunchRequest) message;
 	    faulty = launch.getFaulty();
 	    propose();
@@ -113,6 +107,7 @@ public class Process extends UntypedAbstractActor {
 	    AbortReadResponse abort = (AbortReadResponse) message;
 	    if (reading == true && abort.getBallot() == ballot)
 	    {
+		log.info("p" + self().path().name() + " received an AbortRead");
 		reading = false;
 		propose();
 	    }
@@ -122,6 +117,8 @@ public class Process extends UntypedAbstractActor {
 	    AbortImposeResponse abort = (AbortImposeResponse) message;
 	    if (imposing == true && abort.getBallot() == ballot)
 	    {
+		log.info("p" + self().path().name() + " received an AbortImpose");
+		
 		imposing = false;
 		propose();
 	    }
@@ -136,9 +133,11 @@ public class Process extends UntypedAbstractActor {
 					  gather.getImposeBallot())
 		    );
 		gathercount++;
+
+		log.info("p" + self().path().name() + " received a new GatherResponse. Now gathercount = " + gathercount);
 	    }
 
-	    if (gathercount > N / 2)
+	    if (reading == true && gathercount > N / 2)
 	    {
 		reading = false;
 		int i;
@@ -154,9 +153,10 @@ public class Process extends UntypedAbstractActor {
 			    max_impose = temp.getImposeBallot();
 			}
 		}
-
+		log.info("p" + self().path().name() + " finished Read phase and read v = " + proposal + ", now it has started Impose");
+		
 		imposing = true;
-		imposecount = 0;
+		ackcount = 0;
 		for(ActorRef actor: processes.references)
 		{
 		    actor.tell(new ImposeRequest(ballot, proposal), self());
@@ -168,10 +168,11 @@ public class Process extends UntypedAbstractActor {
 	    AckResponse ack = (AckResponse) message;
 	    if (imposing == true && ack.getBallot() == ballot)
 	    {
-		imposecount++;
+		ackcount++;
+		log.info("p" + self().path().name() + " received a new AckResponse. Now ackcount = " + ackcount);
 	    }
 
-	    if (imposecount > N / 2)
+	    if (imposing == true && ackcount > N / 2)
 	    {
 		imposing = false;
 		log.info("p" + self().path().name() + " sent DECIDE to all");
@@ -188,6 +189,7 @@ public class Process extends UntypedAbstractActor {
 	    if (readballot >= read.getBallot() || imposeballot >= read.getBallot())
 	    {
 		getSender().tell(new AbortReadResponse(read.getBallot()), self());
+		log.info("p" + self().path().name() + " has denied p" + getSender().path().name() + " Read request");
 	    }
 	    else
 	    {
@@ -197,6 +199,8 @@ public class Process extends UntypedAbstractActor {
 					      estimate,
 					      id),
 			   self());
+
+		log.info("p" + self().path().name() + " has accepted p" + getSender().path().name() + " Read request");
 	    }
 	}
 	else if (message instanceof ImposeRequest)
@@ -205,12 +209,14 @@ public class Process extends UntypedAbstractActor {
 	    if (readballot > impose.getBallot() || imposeballot > impose.getBallot())
 	    {
 		getSender().tell(new AbortImposeResponse(impose.getBallot()), self());
+		log.info("p" + self().path().name() + " has denied p" + getSender().path().name() + " Impose request");
 	    }
 	    else
 	    {
 		estimate = impose.getProposal();
 		imposeballot = impose.getBallot();
-		getSender().tell(new AckResponse(impose.getBallot), self());
+		getSender().tell(new AckResponse(impose.getBallot()), self());
+		log.info("p" + self().path().name() + " has accepted p" + getSender().path().name() + " Impose request");
 	    }
 	}
 	else if (message instanceof DecideRequest)
@@ -221,9 +227,5 @@ public class Process extends UntypedAbstractActor {
 	    log.info("p" + self().path().name() + " received DECIDE for value : " + decide.getProposal());    
 	}
 	   	
-/*	if(message instanceof ReadMsg) {
-	    ReadMsg rm = (ReadMsg) message;
-	    log.info("p" + self().path().name() + " received ReadMsg: " + rm.message);
-	    }  */
     }
 }
