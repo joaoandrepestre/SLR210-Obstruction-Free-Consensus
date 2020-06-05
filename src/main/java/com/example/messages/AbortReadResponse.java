@@ -1,13 +1,13 @@
 package com.example.messages;
 
 public class AbortReadResponse {
-    int ballot;
+    long ballot;
 
-    public AbortReadResponse(int _ballot) {
+    public AbortReadResponse(long _ballot) {
         ballot = _ballot;
     }
 
-    public int getBallot() { // needed to distinguish abort from other older requests
+    public long getBallot() { // needed to distinguish abort from other older requests
         return ballot;
     }
 }

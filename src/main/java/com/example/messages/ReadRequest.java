@@ -1,13 +1,13 @@
 package com.example.messages;
 
 public class ReadRequest {
-    int ballot;
+    long ballot;
 
-    public ReadRequest(int _ballot) {
+    public ReadRequest(long _ballot) {
         ballot = _ballot;
     }
 
-    public int getBallot() {
+    public long getBallot() {
         return ballot;
     }
 }

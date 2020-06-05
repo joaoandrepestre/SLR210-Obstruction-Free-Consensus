@@ -2,9 +2,9 @@ package com.example;
 
 public class StateEntry {
     int estimate;
-    int imposeballot;
+    long imposeballot;
 
-    public StateEntry(int _estimate, int _imposeballot) {
+    public StateEntry(int _estimate, long _imposeballot) {
         estimate = _estimate;
         imposeballot = _imposeballot;
     }
@@ -13,7 +13,7 @@ public class StateEntry {
         return estimate;
     }
 
-    public int getImposeBallot() {
+    public long getImposeBallot() {
         return imposeballot;
     }
 }

@@ -1,12 +1,12 @@
 package com.example.messages;
 
 public class GatherResponse {
-    int ballot;
-    int imposeballot;
+    long ballot;
+    long imposeballot;
     int estimate;
     int senderID;
 
-    public GatherResponse(int _ballot, int _imposeballot, int _estimate, int _senderID) {
+    public GatherResponse(long _ballot, long _imposeballot, int _estimate, int _senderID) {
         ballot = _ballot;
         imposeballot = _imposeballot;
         estimate = _estimate;
@@ -17,7 +17,7 @@ public class GatherResponse {
         return senderID;
     }
 
-    public int getBallot() {
+    public long getBallot() {
         return ballot;
     }
 
@@ -25,7 +25,7 @@ public class GatherResponse {
         return estimate;
     }
 
-    public int getImposeBallot() {
+    public long getImposeBallot() {
         return imposeballot;
     }
 }

@@ -1,13 +1,13 @@
 package com.example.messages;
 
 public class AckResponse {
-    int ballot;
+    long ballot;
 
-    public AckResponse(int _ballot) {
+    public AckResponse(long _ballot) {
         ballot = _ballot;
     }
 
-    public int getBallot() {
+    public long getBallot() {
         return ballot;
     }
 }

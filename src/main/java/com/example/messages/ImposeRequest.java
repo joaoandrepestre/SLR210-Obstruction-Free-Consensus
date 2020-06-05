@@ -1,15 +1,15 @@
 package com.example.messages;
 
 public class ImposeRequest {
-    int ballot;
+    long ballot;
     int proposal;
 
-    public ImposeRequest(int _ballot, int _proposal) {
+    public ImposeRequest(long _ballot, int _proposal) {
         ballot = _ballot;
         proposal = _proposal;
     }
 
-    public int getBallot() {
+    public long getBallot() {
         return ballot;
     }
 

@@ -19,7 +19,8 @@ public class Process extends UntypedAbstractActor {
 	private boolean hold;
 
 	// -- OFCons variables --
-	private int ballot, proposal, estimate, readballot, imposeballot;
+	private long ballot, readballot, imposeballot;
+	private int proposal, estimate;
 	private ArrayList<StateEntry> states;
 
 	private int gathercount, ackcount;
@@ -133,7 +134,7 @@ public class Process extends UntypedAbstractActor {
 				if (reading == true && gathercount > N / 2) {
 					reading = false;
 					int i;
-					int max_impose = 0;
+					long max_impose = 0;
 					StateEntry temp;
 					for (i = 0; i < N; i++) {
 						temp = states.get(i);
