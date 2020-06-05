@@ -16,7 +16,6 @@ public class Process extends UntypedAbstractActor {
 	private final int id;// id of current process
 	private Members processes;// other processes' references
 	private boolean faultProne;
-	private boolean silent;
 	private boolean hold;
 
 	// -- OFCons variables --
@@ -39,7 +38,6 @@ public class Process extends UntypedAbstractActor {
 		gathercount = 0;
 		ackcount = 0;
 		faultProne = false;
-		silent = false;
 		hold = false;
 		states = new ArrayList<StateEntry>(N);
 
@@ -88,13 +86,13 @@ public class Process extends UntypedAbstractActor {
 		}
 
 		/* --- Synoid OFCons --- */
-		else if (!silent) {
+		else if (!(faultProne && (Math.random() < Main.crashProbability))) {
 
 			if (message instanceof LaunchRequest) {
 				LaunchRequest launch = (LaunchRequest) message;
 				faultProne = launch.getFaulty();
-				silent = faultProne && (Math.random() < Main.crashProbability);
-				log.info("p" + self().path().name() + " received the launch request. silent: " + silent);
+				boolean silent = (faultProne && (Math.random() < Main.crashProbability));
+				log.info("p" + self().path().name() + " received the launch request. faultProne: " + faultProne);
 				if (!silent && !hold)
 					propose();
 			}
