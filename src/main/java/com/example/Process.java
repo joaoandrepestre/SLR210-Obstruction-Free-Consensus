@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.lang.Math;
 
 import com.example.messages.*;
+import com.example.utils.DecisionCheck;
 
 public class Process extends UntypedAbstractActor {
 	private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);// Logger attached to actor
@@ -26,7 +27,9 @@ public class Process extends UntypedAbstractActor {
 	private int gathercount, ackcount;
 	private boolean reading, imposing;
 
-	public Process(int ID, int nb) {
+	private DecisionCheck decisionCheck;
+
+	public Process(int ID, int nb, DecisionCheck dc) {
 		N = nb;
 		id = ID;
 		estimate = -1;
@@ -42,6 +45,8 @@ public class Process extends UntypedAbstractActor {
 		hold = false;
 		states = new ArrayList<StateEntry>(N);
 
+		decisionCheck = dc;
+
 		int i;
 		for (i = 0; i < N; i++) {
 			states.add(new StateEntry(-1, 0));
@@ -55,9 +60,9 @@ public class Process extends UntypedAbstractActor {
 	/**
 	 * Static function creating actor
 	 */
-	public static Props createActor(int ID, int nb) {
+	public static Props createActor(int ID, int nb, DecisionCheck dc) {
 		return Props.create(Process.class, () -> {
-			return new Process(ID, nb);
+			return new Process(ID, nb, dc);
 		});
 	}
 
@@ -101,7 +106,10 @@ public class Process extends UntypedAbstractActor {
 			else if (message instanceof LeaderElectionMsg) {
 				LeaderElectionMsg leaderElection = (LeaderElectionMsg) message;
 				hold = (id != leaderElection.leaderId);
-				log.info("p" + self().path().name() + " received a leader election. leader id: " + leaderElection.leaderId);
+				log.info("p" + self().path().name() + " received a leader election. leader id: "
+						+ leaderElection.leaderId);
+				if (hold)
+					log.info("p" + self().path().name() + " is holding...");
 			}
 
 			else if (message instanceof AbortReadResponse) {
@@ -198,6 +206,7 @@ public class Process extends UntypedAbstractActor {
 				DecideRequest decide = (DecideRequest) message;
 				reading = false;
 				imposing = false;
+				decisionCheck.decided = true;
 				log.info("p" + self().path().name() + " received DECIDE for value : " + decide.getProposal());
 			}
 		}
