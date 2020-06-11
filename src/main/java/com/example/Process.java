@@ -76,7 +76,7 @@ public class Process extends UntypedAbstractActor {
 		reading = true;
 		gathercount = 0;
 
-		log.info("p" + self().path().name() + " proposed " + proposal);
+		log.info("p" + self().path().name() + " proposed " + proposal + " with ballot: " + ballot);
 		log.info("p" + self().path().name() + " started the Reading phase");
 		for (ActorRef actor : processes.references) {
 			actor.tell(new ReadRequest(ballot), self());
@@ -135,8 +135,8 @@ public class Process extends UntypedAbstractActor {
 					states.set(gather.getSenderID(), new StateEntry(gather.getEstimate(), gather.getImposeBallot()));
 					gathercount++;
 
-					log.info("p" + self().path().name() + " received a new GatherResponse. Now gathercount = "
-							+ gathercount);
+					//log.info("p" + self().path().name() + " received a new GatherResponse. Now gathercount = "
+					//		+ gathercount);
 				}
 
 				if (reading == true && gathercount > N / 2) {
@@ -165,7 +165,7 @@ public class Process extends UntypedAbstractActor {
 				AckResponse ack = (AckResponse) message;
 				if (imposing == true && ack.getBallot() == ballot) {
 					ackcount++;
-					log.info("p" + self().path().name() + " received a new AckResponse. Now ackcount = " + ackcount);
+					//log.info("p" + self().path().name() + " received a new AckResponse. Now ackcount = " + ackcount);
 				}
 
 				if (imposing == true && ackcount > N / 2) {
@@ -180,34 +180,34 @@ public class Process extends UntypedAbstractActor {
 				ReadRequest read = (ReadRequest) message;
 				if (readballot >= read.getBallot() || imposeballot >= read.getBallot()) {
 					getSender().tell(new AbortReadResponse(read.getBallot()), self());
-					log.info(
-							"p" + self().path().name() + " has denied p" + getSender().path().name() + " Read request");
+					//log.info(
+					//		"p" + self().path().name() + " has denied p" + getSender().path().name() + " Read request");
 				} else {
 					readballot = read.getBallot();
 					getSender().tell(new GatherResponse(read.getBallot(), imposeballot, estimate, id), self());
 
-					log.info("p" + self().path().name() + " has accepted p" + getSender().path().name()
-							+ " Read request");
+					//log.info("p" + self().path().name() + " has accepted p" + getSender().path().name()
+					//		+ " Read request");
 				}
 			} else if (message instanceof ImposeRequest) {
 				ImposeRequest impose = (ImposeRequest) message;
 				if (readballot > impose.getBallot() || imposeballot > impose.getBallot()) {
 					getSender().tell(new AbortImposeResponse(impose.getBallot()), self());
-					log.info("p" + self().path().name() + " has denied p" + getSender().path().name()
-							+ " Impose request");
+					//log.info("p" + self().path().name() + " has denied p" + getSender().path().name()
+					//		+ " Impose request");
 				} else {
 					estimate = impose.getProposal();
 					imposeballot = impose.getBallot();
 					getSender().tell(new AckResponse(impose.getBallot()), self());
-					log.info("p" + self().path().name() + " has accepted p" + getSender().path().name()
-							+ " Impose request");
+					//log.info("p" + self().path().name() + " has accepted p" + getSender().path().name()
+					//		+ " Impose request");
 				}
 			} else if (message instanceof DecideRequest) {
 				DecideRequest decide = (DecideRequest) message;
 				reading = false;
 				imposing = false;
-				decisionCheck.decided = true;
 				log.info("p" + self().path().name() + " received DECIDE for value : " + decide.getProposal());
+				decisionCheck.decided = true;
 			}
 		}
 

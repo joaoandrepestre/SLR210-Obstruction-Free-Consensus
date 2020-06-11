@@ -14,72 +14,94 @@ import com.example.utils.DecisionCheck;
 
 public class Main {
 
-    //public static int N = 5; /* Total number of processes */
-    //public static int f = (int) Math.ceil((double) (N) / 2) - 1; /* Number of fault prone processes */
     public static double crashProbability = 0.5; /* Probability that a fault prone process will crash */
-    //public static double leaderTimeout = 0.5; /* Timeout until leader election emulation in seconds */
-    public static final ActorSystem system = ActorSystem.create("system");
 
-    public static boolean checkIfDecided(DecisionCheck[] dcs){
-        for(DecisionCheck dc: dcs){
-            if(dc.decided)
+    public static boolean checkIfDecided(DecisionCheck[] dcs) {
+        for (DecisionCheck dc : dcs) {
+            if (dc.decided)
                 return true;
         }
         return false;
     }
 
-    public static void testAndTime(int n, double timeout) throws InterruptedException {
+    public static long testAndTime(int n, double timeout) throws InterruptedException {
+        ActorSystem system;
         int f = (int) Math.ceil((double) (n) / 2) - 1;
+        long startTime, endTime, duration;
+        duration = 0;
 
-        // Instantiate an actor system
-        system.log().info("System started with N=" + n);
+        ArrayList<ActorRef> references;
+        DecisionCheck[] decisionChecks;
+        Members m;
 
-        ArrayList<ActorRef> references = new ArrayList<>();
-        DecisionCheck[] decisionChecks = new DecisionCheck[n];
+        int leaderIndex, leaderId;
 
-        for (int i = 0; i < n; i++) {
-            // Instantiate processes
-            decisionChecks[i] = new DecisionCheck();
-            final ActorRef a = system.actorOf(Process.createActor(i, n, decisionChecks[i]), "" + i);
-            references.add(a);
+        for (int k = 0; k < 5; k++) {
+            system = ActorSystem.create("system");
+            // Instantiate an actor system
+            system.log().info("System started with N=" + n);
+
+            references = new ArrayList<>();
+            decisionChecks = new DecisionCheck[n];
+
+            for (int i = 0; i < n; i++) {
+                // Instantiate processes
+                decisionChecks[i] = new DecisionCheck();
+                ActorRef a = system.actorOf(Process.createActor(i, n, decisionChecks[i]), "" + i);
+                references.add(a);
+            }
+
+            // give each process a view of all the other processes
+            m = new Members(references);
+            for (ActorRef actor : references) {
+                actor.tell(m, ActorRef.noSender());
+            }
+
+            // choose fault prone processes
+            // first f processes are fault prone
+            Collections.shuffle(references);
+
+            // Choose a leader
+            leaderIndex = (int) ((Math.random() * (((n - 1) - f) + 1)) + f);
+            leaderId = Integer.parseInt(references.get(leaderIndex).path().name());
+            system.log().info("Leader index: " + leaderIndex + " Leader id: " + leaderId);
+
+            Thread.sleep(1000);
+
+            ActorRef actor;
+            startTime = System.currentTimeMillis();
+            for (int i = 0; i < n; i++) {
+                actor = references.get(i);
+                // the first f processes in the sheffled list will receive a faulty state
+                actor.tell(new LaunchRequest(i < f), ActorRef.noSender());
+                // Schedule leader election emulation
+                system.scheduler().scheduleOnce((FiniteDuration) Duration.create(1000*timeout, TimeUnit.MILLISECONDS), actor,
+                        new LeaderElectionMsg(leaderId), system.dispatcher(), null);
+
+            }
+
+            while (!checkIfDecided(decisionChecks));
+            endTime = System.currentTimeMillis();
+            duration += (endTime - startTime);
+            System.out.println("MAIN - sub: N = " + n + " timeout = " + timeout + "s time = " + (endTime - startTime) + "ms");
+
+            system.terminate();
         }
+        duration/=5;
 
-        // give each process a view of all the other processes
-        Members m = new Members(references);
-        for (ActorRef actor : references) {
-            actor.tell(m, ActorRef.noSender());
-        }
-
-        // choose fault prone processes
-        // first f processes are fault prone
-        Collections.shuffle(references);
-
-        // Choose a leader
-        int leaderIndex = (int) ((Math.random() * (((n-1) - f) + 1)) + f);
-        int leaderId = Integer.parseInt(references.get(leaderIndex).path().name());
-        system.log().info("Leader index: " + leaderIndex + " Leader id: " + leaderId);
-
-        Thread.sleep(1000);
-
-        ActorRef actor;
-        for (int i = 0; i < n; i++) {
-            actor = references.get(i);
-            // the first f processes in the sheffled list will receive a faulty state
-            actor.tell(new LaunchRequest(i < f), ActorRef.noSender());
-            // Schedule leader election emulation
-            system.scheduler().scheduleOnce((FiniteDuration) Duration.create(timeout, TimeUnit.SECONDS), actor,
-                    new LeaderElectionMsg(leaderId), system.dispatcher(), null);
-
-        }
-
-        while(!checkIfDecided(decisionChecks));
-
-        system.log().info("Decided");
-
+        return duration;
     }
 
-
     public static void main(String[] args) throws InterruptedException {
-        testAndTime(100, 2);
+        int ns[] = {3, 10, 100};
+        int n;
+        long time;
+        for(int i=0;i<3;i++){
+            n = ns[i];
+            for(double timeout=0.5;timeout<=2.0;timeout+=0.5){
+                time = testAndTime(n, timeout);
+                System.out.println("MAIN: N = " + n + " timeout = " + timeout + "s time = " + time + "ms");
+            }
+        }
     }
 }
